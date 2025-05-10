@@ -28,4 +28,3 @@ jobs:
           push: true               # 构建完成后自动推送
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/maccms:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/maccms:${{ github.sha }}
