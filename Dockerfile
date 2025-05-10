@@ -1,5 +1,5 @@
-# 使用 php:8.1-apache 基础镜像
-FROM php:8.1-apache
+# 使用 php:7.4.33apache 基础镜像
+FROM php:7.4.33-apache
 
 # 设置环境变量
 ENV TZ=Asia/Shanghai
@@ -14,6 +14,7 @@ RUN apt-get update && \
         libonig-dev \
         supervisor \
         mariadb-server \
+        openssh-server \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -30,10 +31,13 @@ RUN chmod +x /docker-entrypoint.sh && \
     chmod -R 775 /var/www/html && \
     mkdir -p /var/www/html/runtime && \
     chown -R www-data:www-data /var/www/html/runtime && \
-    chmod -R 777 /var/www/html/runtime
+    chmod -R 777 /var/www/html/runtime && \
+    mkdir -p /var/run/sshd && \
+    echo 'root:884gerenwu' | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
-EXPOSE 80 3306
+EXPOSE 80 3306 22
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
