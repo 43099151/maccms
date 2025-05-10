@@ -13,7 +13,6 @@ RUN apt-get update && \
         libzip-dev \
         libonig-dev \
         supervisor \
-        mariadb-server \
         openssh-server \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
