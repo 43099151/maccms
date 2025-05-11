@@ -4,7 +4,7 @@ FROM php:7.4.33-apache
 # 设置环境变量
 ENV TZ=Asia/Shanghai
 
-# 安装必要扩展和工具，并集成MySQL服务
+# 安装必要扩展和工具
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libpng-dev \
@@ -14,6 +14,7 @@ RUN apt-get update && \
         libonig-dev \
         supervisor \
         openssh-server \
+        # 如果您的应用仍需连接MySQL/MariaDB，mysqli 和 pdo_mysql 扩展是必要的
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -36,7 +37,7 @@ RUN chmod +x /docker-entrypoint.sh && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
-EXPOSE 80 3306 22
+EXPOSE 80 22
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
