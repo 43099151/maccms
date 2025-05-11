@@ -1,4 +1,0 @@
-CREATE DATABASE IF NOT EXISTS maccms;
-CREATE USER IF NOT EXISTS 'maccms'@'localhost' IDENTIFIED BY 'maccms123';
-GRANT ALL PRIVILEGES ON maccms.* TO 'maccms'@'localhost';
-FLUSH PRIVILEGES;
