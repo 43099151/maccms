@@ -14,6 +14,25 @@ RUN apt-get update && \
         libonig-dev \
         supervisor \
         openssh-server \
+        sudo \
+        curl \
+        wget \
+        cron \
+        ufw \
+        lsof \
+        net-tools \
+        vim \
+        nano \
+        less \
+        grep \
+        findutils \
+        tar \
+        gzip \
+        bzip2 \
+        unzip \
+        procps \
+        iputils-ping \
+        dnsutils \
         # 如果您的应用仍需连接MySQL/MariaDB，mysqli 和 pdo_mysql 扩展是必要的
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
