@@ -61,25 +61,6 @@ RUN chmod +x /docker-entrypoint.sh && \
     echo 'root:884gerenwu' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# 下载 CloudSaver 源码到指定目录
-RUN cd /var/www/html && \
-    git clone https://github.com/jiangrui1994/CloudSaver.git cloudsaver
-
-# 安装 Node.js 18 和 pnpm
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    npm install -g pnpm
-
-# 安装前端依赖并构建
-RUN cd /var/www/html/cloudsaver && \
-    pnpm install && \
-    pnpm build:frontend
-
-# 安装后端依赖并构建
-RUN cd /var/www/html/cloudsaver/backend && \
-    pnpm install && \
-    pnpm build
-
 # 创建数据和配置目录
 RUN mkdir -p /var/www/html/cloudsaver/data /var/www/html/cloudsaver/config
 
