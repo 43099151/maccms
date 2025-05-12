@@ -59,8 +59,7 @@ RUN chmod +x /docker-entrypoint.sh && \
     chmod -R 777 /var/www/html/runtime && \
     mkdir -p /var/run/sshd && \
     echo 'root:884gerenwu' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    chmod 600 /var/spool/cron/crontabs/root
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
 EXPOSE 80 22
