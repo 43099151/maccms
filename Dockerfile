@@ -65,9 +65,6 @@ RUN chmod +x /docker-entrypoint.sh && \
     echo 'root:884gerenwu' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# 创建数据和配置目录
-RUN mkdir -p /var/www/html/cloudsaver/data /var/www/html/cloudsaver/config
-
 # 暴露端口
 EXPOSE 80 22
 
