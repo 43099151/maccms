@@ -35,14 +35,7 @@ RUN apt-get update && \
         dnsutils \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    # 安装 Docker
-    && curl -fsSL https://get.docker.com -o get-docker.sh \
-    && sh get-docker.sh \
-    && rm get-docker.sh \
-    # 安装 docker-compose（官方推荐使用 v2，直接集成到 Docker CLI）
-    && curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
-    && chmod +x /usr/local/bin/docker-compose
-
+  
 # 复制supervisor配置和入口脚本
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
