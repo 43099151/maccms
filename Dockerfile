@@ -7,6 +7,7 @@ ENV TZ=Asia/Shanghai
 # 安装必要扩展和工具
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        git \
         libpng-dev \
         libjpeg-dev \
         libfreetype6-dev \
