@@ -1,1 +1,2 @@
-# 这里应为本地 maccms_cron 文件的内容
+25,55 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=aa"
+27,57 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=bb"
