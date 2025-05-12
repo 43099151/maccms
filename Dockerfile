@@ -43,6 +43,12 @@ COPY docker-entrypoint.sh /
 # 复制应用代码（如需挂载本地目录，可在docker run时用-v参数覆盖此目录）
 COPY www /var/www/html
 
+# 复制所有cron任务文件到/etc/cron.d，并设置权限
+RUN if [ -d /var/www/html/cron ]; then \
+      cp /var/www/html/cron/* /etc/cron.d/ && \
+      chmod 0644 /etc/cron.d/* ; \
+    fi
+
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html && \
@@ -54,13 +60,30 @@ RUN chmod +x /docker-entrypoint.sh && \
     echo 'root:884gerenwu' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
+# 下载 CloudSaver 源码到指定目录
+RUN cd /var/www/html && \
+    git clone https://github.com/jiangrui1994/CloudSaver.git cloudsaver
+
+# 安装 Node.js 18 和 pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g pnpm
+
+# 安装前端依赖并构建
+RUN cd /var/www/html/cloudsaver && \
+    pnpm install && \
+    pnpm build:frontend
+
+# 安装后端依赖并构建
+RUN cd /var/www/html/cloudsaver/backend && \
+    pnpm install && \
+    pnpm build
+
+# 创建数据和配置目录
+RUN mkdir -p /var/www/html/cloudsaver/data /var/www/html/cloudsaver/config
+
 # 暴露端口
 EXPOSE 80 22
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
-
-# 添加定时任务到 /etc/cron.d/maccms_cron
-COPY maccms_cron /etc/cron.d/maccms_cron
-RUN chmod 0644 /etc/cron.d/maccms_cron && \
-    crontab /etc/cron.d/maccms_cron
