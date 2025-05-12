@@ -34,7 +34,7 @@ RUN apt-get update && \
         iputils-ping \
         dnsutils \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* 
 
 # 复制supervisor配置和入口脚本
 COPY supervisord.conf /etc/supervisor/supervisord.conf
