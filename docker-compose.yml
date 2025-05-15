@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    container_name: maccms10
+    ports:
+      - "80:80"
+      - "22:22"
+    volumes:
+      - ./www:/var/www/html
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
