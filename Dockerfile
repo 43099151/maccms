@@ -55,7 +55,7 @@ RUN pip install --no-cache-dir flask apscheduler requests treelib
 
 # 复制supervisor配置和入口脚本
 COPY supervisord.conf /etc/supervisor/supervisord.conf
-COPY docker-entrypoint.sh /
+COPY docker-entrypoint.sh 
 
 # 复制应用代码（如需挂载本地目录，可在docker run时用-v参数覆盖此目录）
 COPY www /var/www/html
