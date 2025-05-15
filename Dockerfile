@@ -51,7 +51,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装quark-auto-save依赖
-RUN pip install --no-cache-dir -r /var/www/html/quark-auto-save/requirements.txt
+RUN pip install --no-cache-dir flask apscheduler requests treelib
 
 # 复制supervisor配置和入口脚本
 COPY supervisord.conf /etc/supervisor/supervisord.conf
