@@ -13,4 +13,11 @@
 # mkdir -p /run/mysqld
 # chown mysql:mysql /run/mysqld
 
+# 自动同步定时任务文件并重载cron服务
+if [ -d /var/www/html/cron ]; then
+  cp -f /var/www/html/cron/* /etc/cron.d/ 2>/dev/null || true
+  chmod 0644 /etc/cron.d/* 2>/dev/null || true
+  service cron reload 2>/dev/null || true
+fi
+
 exec "$@"
