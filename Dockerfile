@@ -52,7 +52,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装quark-auto-save依赖
-RUN pip install --no-cache-dir flask apscheduler requests treelib
+RUN pip install --no-cache-dir \
+    requests PyYAML apscheduler beautifulsoup4 lxml \
+    Flask Flask-APScheduler Flask-Login anytree colorlog
 
 # 安装kubectl
 RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
