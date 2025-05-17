@@ -25,6 +25,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .               # Dockerfile所在目录
+          file: ./Dockerfile       # Dockerfile的路径 (如果不是根目录下的Dockerfile，请指定)
           push: true               # 构建完成后自动推送
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/maccms:latest
+          # 新增：传递构建参数
+          build-args: |
+            ROOT_PASSWORD=${{ secrets.DOCKER_ROOT_PASSWORD }}
