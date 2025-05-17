@@ -1,6 +1,9 @@
 # 使用 php:7.4.33-apache 基础镜像
 FROM php:7.4.33-apache
 
+# 新增：声明一个构建参数用于root密码
+ARG ROOT_PASSWORD
+
 # 设置环境变量
 ENV TZ=Asia/Shanghai
 
@@ -82,7 +85,8 @@ RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html/runtime && \
     chmod -R 777 /var/www/html/runtime && \
     mkdir -p /var/run/sshd && \
-    echo 'root:884gerenwu' | chpasswd && \
+    # 修改：使用构建参数设置密码
+    (if [ -n "${ROOT_PASSWORD}" ]; then echo "root:${ROOT_PASSWORD}" | chpasswd; else echo "Warning: ROOT_PASSWORD not set, root password will not be changed."; fi) && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
