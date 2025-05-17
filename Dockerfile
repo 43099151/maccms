@@ -72,9 +72,6 @@ RUN if [ -d /var/www/html/cron ]; then \
       chmod 0644 /etc/cron.d/* ; \
     fi
 
-# 复制kubeconfig到/var/www/html/
-COPY kubeconfig.yaml /var/www/html/kubeconfig.yaml
-
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html && \
