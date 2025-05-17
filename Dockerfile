@@ -54,6 +54,11 @@ RUN apt-get update \
 # 安装quark-auto-save依赖
 RUN pip install --no-cache-dir flask apscheduler requests treelib
 
+# 安装kubectl
+RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
+
 # 复制supervisor配置和入口脚本
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
@@ -66,6 +71,9 @@ RUN if [ -d /var/www/html/cron ]; then \
       cp /var/www/html/cron/* /etc/cron.d/ && \
       chmod 0644 /etc/cron.d/* ; \
     fi
+
+# 复制kubeconfig到/var/www/html/
+COPY kubeconfig.yaml /var/www/html/kubeconfig.yaml
 
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
