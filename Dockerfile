@@ -34,6 +34,7 @@ RUN apt-get update && \
         procps \
         iputils-ping \
         dnsutils \
+        sshpass \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* 
 
