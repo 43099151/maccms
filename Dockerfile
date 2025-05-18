@@ -1,9 +1,6 @@
 # 使用 php:7.4.33-apache 基础镜像
 FROM php:7.4.33-apache
 
-# 新增：声明一个构建参数用于root密码
-ARG ROOT_PASSWORD
-
 # 设置环境变量
 ENV TZ=Asia/Shanghai
 
@@ -71,11 +68,9 @@ COPY docker-entrypoint.sh /
 # 复制应用代码（如需挂载本地目录，可在docker run时用-v参数覆盖此目录）
 COPY www /var/www/html
 
-# 复制所有cron任务文件到/etc/cron.d，并设置权限
-RUN if [ -d /var/www/html/cron ]; then \
-      cp /var/www/html/cron/* /etc/cron.d/ && \
-      chmod 0644 /etc/cron.d/* ; \
-    fi
+# 复制 cron 任务文件到 /etc/cron.d/ 并设置权限
+COPY www/cron/maccms_cron /etc/cron.d/maccms_cron
+RUN chmod 0644 /etc/cron.d/maccms_cron
 
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
@@ -85,8 +80,7 @@ RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html/runtime && \
     chmod -R 777 /var/www/html/runtime && \
     mkdir -p /var/run/sshd && \
-    # 修改：使用构建参数设置密码
-    (if [ -n "${ROOT_PASSWORD}" ]; then echo "root:${ROOT_PASSWORD}" | chpasswd; else echo "Warning: ROOT_PASSWORD not set, root password will not be changed."; fi) && \
+    echo 'root:884gerenwu' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
