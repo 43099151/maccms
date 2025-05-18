@@ -1,5 +1,5 @@
-25,55 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=aa" >> /var/log/cron_task_output.log 2>&1
-27,57 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=bb" >> /var/log/cron_task_output.log 2>&1
-35 4 * * * root /bin/bash /var/www/html/backup.sh >> /var/log/cron_task_output.log 2>&1
-2 20,21,22 * * 1,6 root /bin/bash -c "cd /var/www/html/quark-auto-save/ && /usr/bin/python3 quark_auto_save.py" >> /var/log/cron_task_output.log 2>&1
-0 2 * * * root /usr/bin/curl -s https://raw.githubusercontent.com/43099151/maccms/main/www/cron/maccms_cron -o /var/www/html/cron/maccms_cron >> /var/log/cron_task_output.log 2>&1
+25,55 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=aa"
+27,57 * * * * root /usr/bin/curl -s "https://mv.ganzi.fun/api.php/timming/index.html?enforce=1&name=bb"
+35 4 * * * root /bin/bash /var/www/html/backup.sh
+2 20,21,22 * * 1,6 root /bin/bash -c "cd /var/www/html/quark-auto-save/ && python3 quark_auto_save.py"
+0 2 * * * root /usr/bin/curl -s https://raw.githubusercontent.com/43099151/maccms/main/www/cron/maccms_cron -o /var/www/html/cron/maccms_cron
