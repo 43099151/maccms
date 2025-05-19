@@ -35,6 +35,7 @@ RUN apt-get update && \
         iputils-ping \
         dnsutils \
         sshpass \
+        inotify-tools \
     && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* 
 
@@ -67,10 +68,6 @@ COPY docker-entrypoint.sh /
 
 # 复制应用代码（如需挂载本地目录，可在docker run时用-v参数覆盖此目录）
 COPY www /var/www/html
-
-# 复制 cron 任务文件到 /etc/cron.d/ 并设置权限
-COPY www/cron/maccms_cron /etc/cron.d/maccms_cron
-RUN chmod 0644 /etc/cron.d/maccms_cron
 
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
