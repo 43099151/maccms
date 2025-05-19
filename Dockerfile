@@ -77,7 +77,7 @@ RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html/runtime && \
     chmod -R 777 /var/www/html/runtime && \
     mkdir -p /var/run/sshd && \
-    echo 'root:884gerenwu' | chpasswd && \
+    echo "root:${DOCKER_ROOT_PASSWORD:-Changeme123!}" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 # 暴露端口
