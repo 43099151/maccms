@@ -31,4 +31,4 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/maccms:latest
           # 新增：传递构建参数
           build-args: |
-            ROOT_PASSWORD=${{ secrets.DOCKER_ROOT_PASSWORD }}
+            DOCKER_ROOT_PASSWORD=${{ secrets.DOCKER_ROOT_PASSWORD }}
