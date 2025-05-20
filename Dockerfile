@@ -67,6 +67,7 @@ COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
 
 # 设置权限
+ARG DOCKER_ROOT_PASSWORD
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html && \
     chmod -R 775 /var/www/html && \
