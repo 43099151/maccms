@@ -66,9 +66,6 @@ RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
 
-# 复制应用代码（如需挂载本地目录，可在docker run时用-v参数覆盖此目录）
-COPY www /var/www/html
-
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R www-data:www-data /var/www/html && \
