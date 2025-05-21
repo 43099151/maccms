@@ -29,6 +29,4 @@ jobs:
           push: true               # 构建完成后自动推送
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/maccms:latest
-          # 新增：传递构建参数
-          build-args: |
-            DOCKER_ROOT_PASSWORD=${{ secrets.DOCKER_ROOT_PASSWORD }}
+          
