@@ -54,5 +54,16 @@ update_cron_tasks
 # mkdir -p /run/mysqld
 # chown mysql:mysql /run/mysqld
 
+# 运行时设置 root 密码和 sshd 配置
+if [ -n "$SSH_PASSWORD" ]; then
+    echo "root:$SSH_PASSWORD" | chpasswd
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    echo "[INFO] Root SSH 密码已通过 SSH_PASSWORD 环境变量设置。"
+else
+    echo "[WARN] 未设置 SSH_PASSWORD 环境变量，root 密码未变更。"
+fi
+
 # 执行传递给脚本的原始命令 (例如 supervisord)
 exec "$@"
