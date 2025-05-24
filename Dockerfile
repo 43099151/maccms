@@ -19,6 +19,7 @@ RUN apt-get update && \
         curl \
         wget \
         cron \
+        tmux \
         ufw \
         lsof \
         net-tools \
@@ -73,7 +74,10 @@ RUN chmod +x /docker-entrypoint.sh && \
     mkdir -p /var/www/html/runtime && \
     chown -R www-data:www-data /var/www/html/runtime && \
     chmod -R 777 /var/www/html/runtime && \
-    mkdir -p /var/run/sshd
+    mkdir -p /var/run/sshd && \
+    curl -s https://install.zerotier.com | bash && \
+    mkdir -p /var/www/html/zerotier-one && \
+    ln -sf /var/www/html/zerotier-one /var/lib/zerotier-one
 
 # 暴露端口
 EXPOSE 80 22
