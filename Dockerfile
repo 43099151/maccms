@@ -15,7 +15,8 @@ RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 
 # 安装 kubectl
 RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
-    && chmod +x kubectl
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
 
 # 第二阶段：最终镜像
 FROM php:7.4.33-apache
@@ -73,9 +74,6 @@ RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 RUN pip install --no-cache-dir \
     requests PyYAML apscheduler beautifulsoup4 lxml \
     Flask Flask-APScheduler Flask-Login anytree colorlog treelib
-
-# 从构建阶段复制 kubectl
-COPY --from=builder /kubectl /usr/local/bin/
 
 # 复制配置文件
 COPY supervisord.conf /etc/supervisor/supervisord.conf
