@@ -1,10 +1,28 @@
-# 使用 php:7.4.33-apache 基础镜像
-FROM php:7.4.33-apache
+# 第一阶段：构建环境
+FROM php:7.4.33-apache AS builder
 
-# 设置环境变量
 ENV TZ=Asia/Shanghai
 
-# 安装必要扩展和工具
+# 安装构建依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl wget git ca-certificates \
+        libpng-dev libjpeg-dev libfreetype6-dev libzip-dev libonig-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 安装 PHP 扩展
+RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
+
+# 安装 kubectl
+RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
+    && chmod +x kubectl
+
+# 第二阶段：最终镜像
+FROM php:7.4.33-apache
+
+ENV TZ=Asia/Shanghai
+
+# 安装运行时必要的包
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
@@ -37,47 +55,39 @@ RUN apt-get update && \
         dnsutils \
         sshpass \
         inotify-tools \
-    && docker-php-ext-install mysqli pdo_mysql gd mbstring zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* 
+        python3 \
+        python3-pip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # 安装 Node.js 18
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 安装 Python3 和 pip
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends apt-transport-https ca-certificates \
-    && apt-get install -y --no-install-recommends python3 python3-pip \
-    && ln -sf /usr/bin/python3 /usr/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/bin/pip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# 安装 PHP 扩展
+RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 
 # 安装quark-auto-save依赖
 RUN pip install --no-cache-dir \
     requests PyYAML apscheduler beautifulsoup4 lxml \
     Flask Flask-APScheduler Flask-Login anytree colorlog treelib
 
-# 安装kubectl
-RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
-    && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/
+# 从构建阶段复制 kubectl
+COPY --from=builder /kubectl /usr/local/bin/
 
-# 复制supervisor配置和入口脚本
+# 复制配置文件
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
 
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
+    mkdir -p /var/www/html/runtime && \
     chown -R www-data:www-data /var/www/html && \
     chmod -R 775 /var/www/html && \
-    mkdir -p /var/www/html/runtime && \
-    chown -R www-data:www-data /var/www/html/runtime && \
     chmod -R 777 /var/www/html/runtime && \
-    mkdir -p /var/run/sshd && \
-    curl -s https://install.zerotier.com | bash && \
-    mkdir -p /var/www/html/zerotier-one && \
-    ln -sf /var/www/html/zerotier-one /var/lib/zerotier-one
+    mkdir -p /var/run/sshd
 
 # 暴露端口
 EXPOSE 80 22
