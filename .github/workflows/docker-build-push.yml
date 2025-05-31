@@ -1,9 +1,8 @@
+
 name: Docker Build and Push
 
 on:
-  push:
-    branches: [ "main" ]  # 监听main分支的push事件
-    tags: [ "v*" ]        # 监听以v开头的标签
+  workflow_dispatch:  # 仅保留手动触发
 
 jobs:
   build-and-push:
@@ -24,9 +23,8 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: .               # Dockerfile所在目录
-          file: ./Dockerfile       # Dockerfile的路径 (如果不是根目录下的Dockerfile，请指定)
-          push: true               # 构建完成后自动推送
+          context: .
+          file: ./Dockerfile
+          push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/maccms:latest
-          
+            ${{ secrets.DOCKERHUB_USERNAME }}/maccms:v1
