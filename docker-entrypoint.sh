@@ -45,6 +45,12 @@ update_cron_tasks
     done
 ) &
 
+# 确保supervisor配置目录存在并具有正确的权限
+SUPERVISOR_CONF_DIR="/var/www/html/supervisor/conf.d"
+mkdir -p "$SUPERVISOR_CONF_DIR"
+chmod -R 755 "$SUPERVISOR_CONF_DIR"
+echo "[INFO] 确保supervisor配置目录 $SUPERVISOR_CONF_DIR 存在并具有正确的权限。"
+
 # 配置SSH访问
 if [ -n "$SSH_PASSWORD" ]; then
     echo "root:$SSH_PASSWORD" | chpasswd
