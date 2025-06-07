@@ -68,9 +68,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 安装 Go 语言环境
-RUN wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz && \
-    rm go1.21.5.linux-amd64.tar.gz && \
+RUN wget https://go.dev/dl/go1.24.4.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz && \
+    rm go1.24.4.linux-amd64.tar.gz && \
     echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \
     echo 'export GOPATH=/var/www/html/go' >> /etc/profile && \
     echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
