@@ -67,6 +67,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# 安装 Go 语言环境
+RUN wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz && \
+    rm go1.21.5.linux-amd64.tar.gz && \
+    echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \
+    echo 'export GOPATH=/var/www/html/go' >> /etc/profile && \
+    echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
+
 # 安装 PHP 扩展
 RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 
@@ -79,16 +87,23 @@ RUN pip install --no-cache-dir \
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
 
+# 更改 Apache 默认目录
+RUN mkdir -p /var/www/html/maccms && \
+    chown -R www-data:www-data /var/www/html/maccms && \
+    chmod -R 775 /var/www/html/maccms && \
+    sed -i 's|/var/www/html|/var/www/html/maccms|g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's|/var/www/html|/var/www/html/maccms|g' /etc/apache2/apache2.conf
+
 # 设置权限
 RUN chmod +x /docker-entrypoint.sh && \
-    mkdir -p /var/www/html/runtime && \
+    mkdir -p /var/www/html/maccms/runtime && \
     chown -R www-data:www-data /var/www/html && \
     chmod -R 775 /var/www/html && \
-    chmod -R 777 /var/www/html/runtime && \
+    chmod -R 777 /var/www/html/maccms/runtime && \
     mkdir -p /var/run/sshd
 
 # 暴露端口
-EXPOSE 80 22
+EXPOSE 80
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
