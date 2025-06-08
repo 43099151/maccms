@@ -16,18 +16,23 @@ ENV TZ=Asia/Shanghai \
 ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
 
 # --- 2. 安装所有系统依赖和工具 (使用 apk) ---
-RUN apk update && apk add --no-cache \
-    # Web 服务器
-    nginx \
-    # PHP 扩展构建依赖
+RUN apk update && \
+    # 明确启用 community 仓库，确保能找到 supervisor, openjdk, go 等包
+    echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
+    apk add --no-cache \
+    # 核心Web服务
+    nginx supervisor \
+    \
+    # PHP 扩展构建依赖 (jpeg-dev 是正确名称)
     libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev \
-    # Supervisor 和其他工具
-    supervisor openssh sudo curl wget git ca-certificates cron tmux \
-    python3 py3-pip nodejs npm \
-    # Java (CloudSaver需要)
-    openjdk11-jre \
-    # Go 语言
-    go
+    \
+    # 语言和运行时环境
+    python3 py3-pip nodejs npm openjdk11-jre go \
+    \
+    # 常用工具 (已删除 ufw)
+    openssh sudo curl wget git ca-certificates cron tmux \
+    lsof net-tools vim nano less grep findutils tar gzip bzip2 \
+    unzip procps iproute2 ping dnsutils sshpass inotify-tools
 
 # --- 3. 安装 PHP 扩展 ---
 # 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
