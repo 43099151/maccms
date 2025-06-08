@@ -17,7 +17,7 @@ ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
 
 # --- 2. 安装所有系统依赖和工具 (使用 apk) ---
 RUN apk update && \
-    # 明确启用 community 仓库
+    # 启用 community 仓库
     echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
     #
     # --- 分组安装 ---
@@ -31,10 +31,11 @@ RUN apk update && \
     # 组3：语言和运行时环境
     apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
     #
-    # 组4：常用工具 (已移除 net-tools)
-    apk add --no-cache openssh sudo curl wget git ca-certificates cron tmux \
-    lsof vim nano less grep findutils tar gzip bzip2 \
-    unzip procps iproute2 ping dnsutils sshpass inotify-tools
+    # 组4：常用工具 (已使用正确的 Alpine 包名)
+    apk add --no-cache \
+        openssh sudo curl wget git ca-certificates dcron tmux \
+        lsof vim nano less grep findutils tar gzip bzip2 \
+        unzip procps iproute2 iputils bind-tools sshpass inotify-tools
 
 # --- 3. 安装 PHP 扩展 ---
 # 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
