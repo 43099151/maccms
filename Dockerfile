@@ -53,7 +53,7 @@ COPY --from=cloudsaver_ref /app /opt/cloudsaver
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker-entrypoint.sh /
-
+RUN sed -i 's/\r$//' /docker-entrypoint.sh
 # --- 6. 设置目录和权限 ---
 # FPM镜像默认使用 www-data 用户，这很方便
 RUN mkdir -p /opt/cloudsaver/data /opt/cloudsaver/config && \
