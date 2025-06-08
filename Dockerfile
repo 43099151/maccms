@@ -94,6 +94,7 @@ COPY fastcgi.conf /etc/nginx/fastcgi.conf
 COPY supervisord.conf /etc/supervisord.conf
 COPY docker-entrypoint.sh /
 COPY check-php-extensions.sh /var/www/html/
+COPY check_maccms_config.sh /var/www/html/
 
 # 5c. 创建PHP-FPM自定义配置
 RUN mkdir -p /usr/local/etc/php-fpm.d/ && \
