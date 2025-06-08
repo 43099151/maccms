@@ -14,6 +14,10 @@ RUN apt-get update && \
 RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 
 # 安装 kubectl
+
+# 第三阶段：提取 CloudSaver
+FROM jiangrui1994/cloudsaver:latest AS cloudsaver_builder
+COPY /app /app
 RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/
@@ -75,8 +79,17 @@ RUN wget https://go.dev/dl/go1.24.4.linux-amd64.tar.gz && \
     echo 'export GOPATH=/var/www/html/go' >> /etc/profile && \
     echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
 
+# 从 cloudsaver_builder 阶段复制 CloudSaver 应用文件
+COPY --from=cloudsaver_builder /app /opt/cloudsaver
+
 # 安装 PHP 扩展
 RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
+
+# 设置 CloudSaver 工作目录和权限
+RUN mkdir -p /opt/cloudsaver/data && \
+    mkdir -p /opt/cloudsaver/config && \
+    chown -R www-data:www-data /opt/cloudsaver && \
+    chmod -R 775 /opt/cloudsaver
 
 # 安装quark-auto-save依赖
 RUN pip install --no-cache-dir \
