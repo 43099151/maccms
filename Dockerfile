@@ -17,21 +17,23 @@ ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
 
 # --- 2. 安装所有系统依赖和工具 (使用 apk) ---
 RUN apk update && \
-    # 明确启用 community 仓库，确保能找到 supervisor, openjdk, go 等包
+    # 明确启用 community 仓库
     echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
-    apk add --no-cache \
-    # 核心Web服务
-    nginx supervisor \
-    \
-    # PHP 扩展构建依赖 (jpeg-dev 是正确名称)
-    libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev \
-    \
-    # 语言和运行时环境
-    python3 py3-pip nodejs npm openjdk11-jre go \
-    \
-    # 常用工具 (已删除 ufw)
-    openssh sudo curl wget git ca-certificates cron tmux \
-    lsof net-tools vim nano less grep findutils tar gzip bzip2 \
+    #
+    # --- 分组安装 ---
+    #
+    # 组1：核心服务
+    apk add --no-cache nginx supervisor && \
+    #
+    # 组2：PHP扩展的编译依赖
+    apk add --no-cache libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev && \
+    #
+    # 组3：语言和运行时环境
+    apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
+    #
+    # 组4：常用工具 (已移除 net-tools)
+    apk add --no-cache openssh sudo curl wget git ca-certificates cron tmux \
+    lsof vim nano less grep findutils tar gzip bzip2 \
     unzip procps iproute2 ping dnsutils sshpass inotify-tools
 
 # --- 3. 安装 PHP 扩展 ---
