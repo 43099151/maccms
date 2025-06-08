@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Docker Build and Push 2
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: 43099151/maccms:latest
+          tags: ganzi0528/maccms:v1
           cache-from: type=registry,ref=ganzi0528/maccms:v1
           cache-to: type=inline
           platforms: linux/amd64
