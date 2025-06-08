@@ -39,6 +39,7 @@
     
     # --- 3. 安装 PHP 扩展 ---
     # 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
+    RUN ssh-keygen -A
     RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
     
     # --- 4. 安装 Python 依赖 ---
