@@ -29,8 +29,6 @@ jobs:
           cache-from: type=registry,ref=ganzi0528/maccms:v1
           cache-to: type=inline
           platforms: linux/amd64
-          # 添加构建参数以增加内存
           build-args: |
             DOCKER_BUILDKIT=1
-          # 设置超时时间
-          timeout-minutes: 60 
+          provenance: false
