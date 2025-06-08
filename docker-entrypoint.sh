@@ -76,6 +76,13 @@ if [ -d "/var/www/html/php.d" ]; then
     echo "[INFO] 已复制自定义PHP配置"
 fi
 
+# 检查并修复 MacCMS 配置
+if [ -f "/var/www/html/check_maccms_config.sh" ]; then
+    chmod +x /var/www/html/check_maccms_config.sh
+    /var/www/html/check_maccms_config.sh
+    echo "[INFO] 已检查并修复 MacCMS 配置"
+fi
+
 # 配置SSH访问
 if [ -n "$SSH_PASSWORD" ]; then
     echo "root:$SSH_PASSWORD" | chpasswd
