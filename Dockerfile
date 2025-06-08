@@ -28,6 +28,9 @@ RUN apk update && \
     # 组2：PHP扩展的编译依赖
     apk add --no-cache libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev libxml2-dev libxslt-dev icu-dev && \
     #
+    # 组2.1：添加 PHP 扩展所需的额外依赖
+    apk add --no-cache linux-headers postgresql-dev && \
+    #
     # 组3：语言和运行时环境
     apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
     #
@@ -37,27 +40,28 @@ RUN apk update && \
         lsof vim nano less grep findutils tar gzip bzip2 \
         unzip procps iproute2 iputils bind-tools sshpass inotify-tools file
 
-# --- 3. 安装 PHP 扩展 ---
-# 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
-RUN ssh-keygen -A && \
-    # 安装 PHP 扩展
-    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+# --- 3. 生成 SSH 密钥 ---
+RUN ssh-keygen -A
+
+# --- 4. 安装 PHP 扩展 ---
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install -j$(nproc) \
     mysqli pdo_mysql gd mbstring zip exif bcmath fileinfo soap intl opcache && \
     # 设置时区
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 
-# --- 4. 安装 Python 依赖 ---
+# --- 5. 安装 Python 依赖 ---
 RUN pip install --no-cache-dir requests PyYAML apscheduler beautifulsoup4 lxml Flask Flask-APScheduler Flask-Login anytree colorlog treelib
 
-# --- 5. 复制和配置应用程序 ---
+# --- 6. 复制和配置应用程序 ---
 # 5a. 从 cloudsaver_ref 复制 CloudSaver
 COPY --from=cloudsaver_ref /app /opt/cloudsaver
 
 # 5b. 复制我们自己的配置文件
 # 我们需要为 Nginx、PHP-FPM 和 Supervisor 提供配置文件
 COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY fastcgi.conf /etc/nginx/fastcgi.conf
 COPY supervisord.conf /etc/supervisord.conf
 COPY docker-entrypoint.sh /
 
@@ -90,7 +94,7 @@ RUN { \
 # 确保脚本使用LF换行符
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
-# --- 6. 设置目录和权限 ---
+# --- 7. 设置目录和权限 ---
 # FPM镜像默认使用 www-data 用户，这很方便
 RUN mkdir -p /opt/cloudsaver/data /opt/cloudsaver/config && \
     chown -R www-data:www-data /opt/cloudsaver && \
@@ -110,7 +114,7 @@ RUN mkdir -p /var/log/supervisor && \
     mkdir -p /var/log/php-fpm && \
     mkdir -p /var/run/sshd
 
-# --- 7. 暴露端口和定义启动命令 ---
+# --- 8. 暴露端口和定义启动命令 ---
 EXPOSE 80
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
