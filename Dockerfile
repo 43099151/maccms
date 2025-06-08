@@ -74,9 +74,11 @@ RUN set -ex; \
     intl \
     opcache
 
-# 设置时区
-RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone
+# 设置时区（使用 Alpine 特有的方式）
+RUN apk add --no-cache tzdata && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone && \
+    apk del tzdata
 
 # --- 5. 安装 Python 依赖 ---
 RUN pip install --no-cache-dir requests PyYAML apscheduler beautifulsoup4 lxml Flask Flask-APScheduler Flask-Login anytree colorlog treelib
