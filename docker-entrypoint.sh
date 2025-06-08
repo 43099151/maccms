@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # 定义源 cron 文件和目标 cron 文件路径
