@@ -1,151 +1,109 @@
-#---------------------------------------------------------------------
-# 阶段 1: cloudsaver_ref (无变化)
-#---------------------------------------------------------------------
-FROM jiangrui1994/cloudsaver:latest AS cloudsaver_ref
+# 第一阶段：构建环境
+FROM php:7.4.33-apache AS builder
 
-#---------------------------------------------------------------------
-# 阶段 2: 最终镜像 (基于 Alpine, 使用 Nginx + PHP-FPM)
-#---------------------------------------------------------------------
-# 使用官方的 FPM Alpine 镜像
-FROM php:7.4.33-fpm-alpine
+ENV TZ=Asia/Shanghai
 
-# --- 1. 设置环境变量 ---
-ENV TZ=Asia/Shanghai \
-    GOPATH=/go \
-    GO_VERSION=1.24.4
-ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
+# 安装构建依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl wget git ca-certificates \
+        libpng-dev libjpeg-dev libfreetype6-dev libzip-dev libonig-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- 2. 安装所有系统依赖和工具 (使用 apk) ---
-RUN apk update && \
-    # 启用 community 仓库
-    echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
-    #
-    # --- 分组安装 ---
-    #
-    # 组1：核心服务
-    apk add --no-cache nginx supervisor && \
-    #
-    # 组2：PHP扩展的编译依赖
-    apk add --no-cache \
+# 安装 PHP 扩展
+RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
+
+# 安装 kubectl
+RUN curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/
+
+# 第二阶段：最终镜像
+FROM php:7.4.33-apache
+
+ENV TZ=Asia/Shanghai
+
+# 安装运行时必要的包
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
         libpng-dev \
-        jpeg-dev \
-        freetype-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
         libzip-dev \
-        oniguruma-dev \
-        libxml2-dev \
-        libxslt-dev \
-        icu-dev \
-        linux-headers \
-        autoconf \
-        g++ \
-        make \
-        gcc \
-        musl-dev \
-        postgresql-dev && \
-    #
-    # 组3：语言和运行时环境
-    apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
-    #
-    # 组4：常用工具 (已使用正确的 Alpine 包名)
-    apk add --no-cache \
-        openssh sudo curl wget git ca-certificates dcron tmux \
-        lsof vim nano less grep findutils tar gzip bzip2 \
-        unzip procps iproute2 iputils bind-tools sshpass inotify-tools file
+        libonig-dev \
+        supervisor \
+        openssh-server \
+        sudo \
+        curl \
+        wget \
+        cron \
+        tmux \
+        ufw \
+        lsof \
+        net-tools \
+        vim \
+        nano \
+        less \
+        grep \
+        findutils \
+        tar \
+        gzip \
+        bzip2 \
+        unzip \
+        procps \
+        iputils-ping \
+        dnsutils \
+        sshpass \
+        inotify-tools \
+        python3 \
+        python3-pip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip
 
-# --- 3. 生成 SSH 密钥 ---
-RUN ssh-keygen -A
+# 安装 Node.js 18
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- 4. 安装 PHP 扩展 ---
-# 使用 docker-php-extension-installer 来简化安装
-COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+# 安装 Go 语言环境
+RUN wget https://go.dev/dl/go1.24.4.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.24.4.linux-amd64.tar.gz && \
+    rm go1.24.4.linux-amd64.tar.gz && \
+    echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \
+    echo 'export GOPATH=/var/www/html/go' >> /etc/profile && \
+    echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
 
-# 一步安装所有需要的扩展
-RUN set -ex; \
-    install-php-extensions \
-    mysqli \
-    pdo_mysql \
-    gd \
-    mbstring \
-    zip \
-    exif \
-    bcmath \
-    fileinfo \
-    soap \
-    intl \
-    opcache
+# 安装 PHP 扩展
+RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
 
-# 设置时区（使用 Alpine 特有的方式）
-RUN apk add --no-cache tzdata && \
-    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone && \
-    apk del tzdata
+# 安装quark-auto-save依赖
+RUN pip install --no-cache-dir \
+    requests PyYAML apscheduler beautifulsoup4 lxml \
+    Flask Flask-APScheduler Flask-Login anytree colorlog treelib
 
-# --- 5. 安装 Python 依赖 ---
-RUN pip install --no-cache-dir requests PyYAML apscheduler beautifulsoup4 lxml Flask Flask-APScheduler Flask-Login anytree colorlog treelib
-
-# --- 6. 复制和配置应用程序 ---
-# 5a. 从 cloudsaver_ref 复制 CloudSaver
-COPY --from=cloudsaver_ref /app /opt/cloudsaver
-
-# 5b. 复制我们自己的配置文件
-# 我们需要为 Nginx、PHP-FPM 和 Supervisor 提供配置文件
-COPY nginx.conf /etc/nginx/http.d/default.conf
-COPY fastcgi.conf /etc/nginx/fastcgi.conf
-COPY supervisord.conf /etc/supervisord.conf
+# 复制配置文件
+COPY supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker-entrypoint.sh /
-COPY check-php-extensions.sh /var/www/html/
-COPY check_maccms_config.sh /var/www/html/
 
-# 5c. 创建PHP-FPM自定义配置
-RUN mkdir -p /usr/local/etc/php-fpm.d/ && \
-    echo '[global]' > /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'error_log = /var/log/php-fpm.log' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo '' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo '[www]' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'user = www-data' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'group = www-data' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'listen = 127.0.0.1:9000' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'pm = dynamic' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'pm.max_children = 50' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'pm.start_servers = 5' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'pm.min_spare_servers = 5' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'pm.max_spare_servers = 35' >> /usr/local/etc/php-fpm.d/www.conf && \
-    echo 'request_terminate_timeout = 300' >> /usr/local/etc/php-fpm.d/www.conf
+# 更改 Apache 默认目录
+RUN mkdir -p /var/www/html/maccms && \
+    chown -R www-data:www-data /var/www/html/maccms && \
+    chmod -R 775 /var/www/html/maccms && \
+    sed -i 's|/var/www/html|/var/www/html/maccms|g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's|/var/www/html|/var/www/html/maccms|g' /etc/apache2/apache2.conf
 
-# 5d. 创建PHP配置
-RUN { \
-    echo 'upload_max_filesize = 100M'; \
-    echo 'post_max_size = 108M'; \
-    echo 'memory_limit = 256M'; \
-    echo 'max_execution_time = 300'; \
-    echo 'max_input_time = 300'; \
-    echo 'date.timezone = Asia/Shanghai'; \
-} > /usr/local/etc/php/conf.d/custom.ini
-
-# 确保脚本使用LF换行符
-RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
-
-# --- 7. 设置目录和权限 ---
-# FPM镜像默认使用 www-data 用户，这很方便
-RUN mkdir -p /opt/cloudsaver/data /opt/cloudsaver/config && \
-    chown -R www-data:www-data /opt/cloudsaver && \
-    chmod -R 775 /opt/cloudsaver
-    
-RUN mkdir -p /var/www/html/maccms/runtime && \
-    mkdir -p /var/www/html/supervisor/conf.d && \
-    mkdir -p /var/www/html/php-fpm.d && \
-    mkdir -p /var/www/html/php.d && \
-    mkdir -p /var/www/html/cron && \
+# 设置权限
+RUN chmod +x /docker-entrypoint.sh && \
+    mkdir -p /var/www/html/maccms/runtime && \
     chown -R www-data:www-data /var/www/html && \
     chmod -R 775 /var/www/html && \
-    chmod -R 777 /var/www/html/maccms/runtime
-
-RUN mkdir -p /var/log/supervisor && \
-    mkdir -p /var/log/nginx && \
-    mkdir -p /var/log/php-fpm && \
+    chmod -R 777 /var/www/html/maccms/runtime && \
     mkdir -p /var/run/sshd
 
-# --- 8. 暴露端口和定义启动命令 ---
+# 暴露端口
 EXPOSE 80
+
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
