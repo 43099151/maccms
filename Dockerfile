@@ -1,76 +1,116 @@
 #---------------------------------------------------------------------
 # 阶段 1: cloudsaver_ref (无变化)
 #---------------------------------------------------------------------
-    FROM jiangrui1994/cloudsaver:latest AS cloudsaver_ref
+FROM jiangrui1994/cloudsaver:latest AS cloudsaver_ref
 
-    #---------------------------------------------------------------------
-    # 阶段 2: 最终镜像 (基于 Alpine, 使用 Nginx + PHP-FPM)
-    #---------------------------------------------------------------------
-    # 使用官方的 FPM Alpine 镜像
-    FROM php:7.4.33-fpm-alpine
+#---------------------------------------------------------------------
+# 阶段 2: 最终镜像 (基于 Alpine, 使用 Nginx + PHP-FPM)
+#---------------------------------------------------------------------
+# 使用官方的 FPM Alpine 镜像
+FROM php:7.4.33-fpm-alpine
+
+# --- 1. 设置环境变量 ---
+ENV TZ=Asia/Shanghai \
+    GOPATH=/go \
+    GO_VERSION=1.24.4
+ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
+
+# --- 2. 安装所有系统依赖和工具 (使用 apk) ---
+RUN apk update && \
+    # 启用 community 仓库
+    echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
+    #
+    # --- 分组安装 ---
+    #
+    # 组1：核心服务
+    apk add --no-cache nginx supervisor && \
+    #
+    # 组2：PHP扩展的编译依赖
+    apk add --no-cache libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev libxml2-dev libxslt-dev icu-dev && \
+    #
+    # 组3：语言和运行时环境
+    apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
+    #
+    # 组4：常用工具 (已使用正确的 Alpine 包名)
+    apk add --no-cache \
+        openssh sudo curl wget git ca-certificates dcron tmux \
+        lsof vim nano less grep findutils tar gzip bzip2 \
+        unzip procps iproute2 iputils bind-tools sshpass inotify-tools file
+
+# --- 3. 安装 PHP 扩展 ---
+# 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
+RUN ssh-keygen -A && \
+    # 安装 PHP 扩展
+    docker-php-ext-configure gd --with-freetype --with-jpeg && \
+    docker-php-ext-install -j$(nproc) \
+    mysqli pdo_mysql gd mbstring zip exif bcmath fileinfo soap intl opcache && \
+    # 设置时区
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo "Asia/Shanghai" > /etc/timezone
+
+# --- 4. 安装 Python 依赖 ---
+RUN pip install --no-cache-dir requests PyYAML apscheduler beautifulsoup4 lxml Flask Flask-APScheduler Flask-Login anytree colorlog treelib
+
+# --- 5. 复制和配置应用程序 ---
+# 5a. 从 cloudsaver_ref 复制 CloudSaver
+COPY --from=cloudsaver_ref /app /opt/cloudsaver
+
+# 5b. 复制我们自己的配置文件
+# 我们需要为 Nginx、PHP-FPM 和 Supervisor 提供配置文件
+COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY supervisord.conf /etc/supervisord.conf
+COPY docker-entrypoint.sh /
+
+# 5c. 创建PHP-FPM自定义配置
+RUN mkdir -p /usr/local/etc/php-fpm.d/ && \
+    echo '[global]' > /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'error_log = /var/log/php-fpm.log' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo '' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo '[www]' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'user = www-data' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'group = www-data' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'listen = 127.0.0.1:9000' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'pm = dynamic' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'pm.max_children = 50' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'pm.start_servers = 5' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'pm.min_spare_servers = 5' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'pm.max_spare_servers = 35' >> /usr/local/etc/php-fpm.d/www.conf && \
+    echo 'request_terminate_timeout = 300' >> /usr/local/etc/php-fpm.d/www.conf
+
+# 5d. 创建PHP配置
+RUN { \
+    echo 'upload_max_filesize = 100M'; \
+    echo 'post_max_size = 108M'; \
+    echo 'memory_limit = 256M'; \
+    echo 'max_execution_time = 300'; \
+    echo 'max_input_time = 300'; \
+    echo 'date.timezone = Asia/Shanghai'; \
+} > /usr/local/etc/php/conf.d/custom.ini
+
+# 确保脚本使用LF换行符
+RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
+# --- 6. 设置目录和权限 ---
+# FPM镜像默认使用 www-data 用户，这很方便
+RUN mkdir -p /opt/cloudsaver/data /opt/cloudsaver/config && \
+    chown -R www-data:www-data /opt/cloudsaver && \
+    chmod -R 775 /opt/cloudsaver
     
-    # --- 1. 设置环境变量 ---
-    ENV TZ=Asia/Shanghai \
-        GOPATH=/go \
-        GO_VERSION=1.24.4
-    ENV PATH=/usr/local/go/bin:${GOPATH}/bin:${PATH}
-    
-    # --- 2. 安装所有系统依赖和工具 (使用 apk) ---
-    RUN apk update && \
-        # 启用 community 仓库
-        echo "http://dl-cdn.alpinelinux.org/alpine/v$(cut -d'.' -f1,2 /etc/alpine-release)/community" >> /etc/apk/repositories && \
-        #
-        # --- 分组安装 ---
-        #
-        # 组1：核心服务
-        apk add --no-cache nginx supervisor && \
-        #
-        # 组2：PHP扩展的编译依赖
-        apk add --no-cache libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev && \
-        #
-        # 组3：语言和运行时环境
-        apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
-        #
-        # 组4：常用工具 (已使用正确的 Alpine 包名)
-        apk add --no-cache \
-            openssh sudo curl wget git ca-certificates dcron tmux \
-            lsof vim nano less grep findutils tar gzip bzip2 \
-            unzip procps iproute2 iputils bind-tools sshpass inotify-tools
-    
-    # --- 3. 安装 PHP 扩展 ---
-    # 注意：fpm版本没有预装mysqli, pdo_mysql，所以我们需要安装它们
-    RUN ssh-keygen -A
-    RUN docker-php-ext-install mysqli pdo_mysql gd mbstring zip
-    
-    # --- 4. 安装 Python 依赖 ---
-    RUN pip install --no-cache-dir requests PyYAML apscheduler beautifulsoup4 lxml Flask Flask-APScheduler Flask-Login anytree colorlog treelib
-    
-    # --- 5. 复制和配置应用程序 ---
-    # 5a. 从 cloudsaver_ref 复制 CloudSaver
-    COPY --from=cloudsaver_ref /app /opt/cloudsaver
-    
-    # 5b. 复制我们自己的配置文件
-    # 我们需要为 Nginx 和 Supervisor 提供配置文件
-    COPY nginx.conf /etc/nginx/http.d/default.conf
-    COPY supervisord.conf /etc/supervisord.conf
-    COPY docker-entrypoint.sh /
-    RUN sed -i 's/\r$//' /docker-entrypoint.sh
-    # --- 6. 设置目录和权限 ---
-    # FPM镜像默认使用 www-data 用户，这很方便
-    RUN mkdir -p /opt/cloudsaver/data /opt/cloudsaver/config && \
-        chown -R www-data:www-data /opt/cloudsaver && \
-        chmod -R 775 /opt/cloudsaver
-    
-    RUN mkdir -p /var/www/html/maccms/runtime && \
-        chown -R www-data:www-data /var/www/html && \
-        chmod -R 775 /var/www/html && \
-        chmod -R 777 /var/www/html/maccms/runtime
-    
-    RUN mkdir -p /var/log/supervisor && \
-        mkdir -p /var/run/sshd && \
-        chmod +x /docker-entrypoint.sh
-    
-    # --- 7. 暴露端口和定义启动命令 ---
-    EXPOSE 80
-    ENTRYPOINT ["/docker-entrypoint.sh"]
-    CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
+RUN mkdir -p /var/www/html/maccms/runtime && \
+    mkdir -p /var/www/html/supervisor/conf.d && \
+    mkdir -p /var/www/html/php-fpm.d && \
+    mkdir -p /var/www/html/php.d && \
+    mkdir -p /var/www/html/cron && \
+    chown -R www-data:www-data /var/www/html && \
+    chmod -R 775 /var/www/html && \
+    chmod -R 777 /var/www/html/maccms/runtime
+
+RUN mkdir -p /var/log/supervisor && \
+    mkdir -p /var/log/nginx && \
+    mkdir -p /var/log/php-fpm && \
+    mkdir -p /var/run/sshd
+
+# --- 7. 暴露端口和定义启动命令 ---
+EXPOSE 80
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisord.conf"]
