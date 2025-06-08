@@ -65,7 +65,9 @@
         chmod -R 775 /var/www/html && \
         chmod -R 777 /var/www/html/maccms/runtime
     
-    RUN mkdir -p /var/run/sshd && chmod +x /docker-entrypoint.sh
+    RUN mkdir -p /var/log/supervisor && \
+        mkdir -p /var/run/sshd && \
+        chmod +x /docker-entrypoint.sh
     
     # --- 7. 暴露端口和定义启动命令 ---
     EXPOSE 80
