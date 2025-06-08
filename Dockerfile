@@ -26,10 +26,22 @@ RUN apk update && \
     apk add --no-cache nginx supervisor && \
     #
     # 组2：PHP扩展的编译依赖
-    apk add --no-cache libpng-dev jpeg-dev freetype-dev libzip-dev oniguruma-dev libxml2-dev libxslt-dev icu-dev && \
-    #
-    # 组2.1：添加 PHP 扩展所需的额外依赖
-    apk add --no-cache linux-headers postgresql-dev && \
+    apk add --no-cache \
+        libpng-dev \
+        jpeg-dev \
+        freetype-dev \
+        libzip-dev \
+        oniguruma-dev \
+        libxml2-dev \
+        libxslt-dev \
+        icu-dev \
+        linux-headers \
+        autoconf \
+        g++ \
+        make \
+        gcc \
+        musl-dev \
+        postgresql-dev && \
     #
     # 组3：语言和运行时环境
     apk add --no-cache python3 py3-pip nodejs npm openjdk11-jre go && \
@@ -44,11 +56,26 @@ RUN apk update && \
 RUN ssh-keygen -A
 
 # --- 4. 安装 PHP 扩展 ---
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install -j$(nproc) \
-    mysqli pdo_mysql gd mbstring zip exif bcmath fileinfo soap intl opcache && \
-    # 设置时区
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+# 使用 docker-php-extension-installer 来简化安装
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+# 一步安装所有需要的扩展
+RUN set -ex; \
+    install-php-extensions \
+    mysqli \
+    pdo_mysql \
+    gd \
+    mbstring \
+    zip \
+    exif \
+    bcmath \
+    fileinfo \
+    soap \
+    intl \
+    opcache
+
+# 设置时区
+RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 
 # --- 5. 安装 Python 依赖 ---
@@ -64,6 +91,7 @@ COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY fastcgi.conf /etc/nginx/fastcgi.conf
 COPY supervisord.conf /etc/supervisord.conf
 COPY docker-entrypoint.sh /
+COPY check-php-extensions.sh /var/www/html/
 
 # 5c. 创建PHP-FPM自定义配置
 RUN mkdir -p /usr/local/etc/php-fpm.d/ && \
