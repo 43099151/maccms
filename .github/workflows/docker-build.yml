@@ -1,10 +1,6 @@
 name: Docker Build and Push
 
 on:
-  push:
-    branches:
-      - main
-  # 允许手动触发工作流
   workflow_dispatch:
 
 jobs:
@@ -29,7 +25,7 @@ jobs:
           context: .
           push: true
           tags: 43099151/maccms:latest
-          cache-from: type=registry,ref=43099151/maccms:latest
+          cache-from: type=registry,ref=ganzi0528/maccms:v1
           cache-to: type=inline
           platforms: linux/amd64
           # 添加构建参数以增加内存
