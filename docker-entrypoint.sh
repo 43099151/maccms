@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # 定义源 cron 文件和目标 cron 文件路径
@@ -23,19 +23,6 @@ update_cron_tasks() {
 
 # 确保源文件所在的目录存在
 mkdir -p "$(dirname "$CRON_SOURCE_FILE")"
-
-# 确保网站目录存在
-mkdir -p /var/www/html/maccms/runtime
-chown -R www-data:www-data /var/www/html
-chmod -R 775 /var/www/html
-chmod -R 777 /var/www/html/maccms/runtime
-
-# 确保日志目录存在
-mkdir -p /var/log/nginx
-mkdir -p /var/log/supervisor
-mkdir -p /var/log/php-fpm
-touch /var/log/php-fpm.log
-chown -R www-data:www-data /var/log/php-fpm.log
 
 # 初始加载 cron 任务
 echo "[INFO] 初始化 cron 任务..."
@@ -63,25 +50,6 @@ SUPERVISOR_CONF_DIR="/var/www/html/supervisor/conf.d"
 mkdir -p "$SUPERVISOR_CONF_DIR"
 chmod -R 755 "$SUPERVISOR_CONF_DIR"
 echo "[INFO] 确保supervisor配置目录 $SUPERVISOR_CONF_DIR 存在并具有正确的权限。"
-
-# 如果存在自定义的php-fpm配置，则复制到相应位置
-if [ -d "/var/www/html/php-fpm.d" ]; then
-    cp -f /var/www/html/php-fpm.d/*.conf /usr/local/etc/php-fpm.d/ 2>/dev/null || true
-    echo "[INFO] 已复制自定义PHP-FPM配置"
-fi
-
-# 如果存在自定义的PHP配置，则复制到相应位置
-if [ -d "/var/www/html/php.d" ]; then
-    cp -f /var/www/html/php.d/*.ini /usr/local/etc/php/conf.d/ 2>/dev/null || true
-    echo "[INFO] 已复制自定义PHP配置"
-fi
-
-# 检查并修复 MacCMS 配置
-if [ -f "/var/www/html/check_maccms_config.sh" ]; then
-    chmod +x /var/www/html/check_maccms_config.sh
-    /var/www/html/check_maccms_config.sh
-    echo "[INFO] 已检查并修复 MacCMS 配置"
-fi
 
 # 配置SSH访问
 if [ -n "$SSH_PASSWORD" ]; then
